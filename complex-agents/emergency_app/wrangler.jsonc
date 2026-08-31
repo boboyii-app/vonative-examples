@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": "worker.ts",
+  "name": "sentinel-ng",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    {
+      "pattern": "sentinel.vonative.com",
+      "zone_name": "vonative.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "DEMO_OPERATOR_NAME": "Demo Operator",
+    "NEXT_PUBLIC_MAP_STYLE_URL": "https://demotiles.maplibre.org/style.json"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sentinel-ng",
+      "database_id": "028422b5-c8c5-4af7-b1c9-d0ef1479a5fa",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "INCIDENT_CHANNEL",
+        "class_name": "IncidentChannel"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["IncidentChannel"]
+    }
+  ],
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "sentinel-ng"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "sentinel-ng-opennext-cache"
+    }
+  ]
+}

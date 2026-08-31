@@ -1,0 +1,33 @@
+{
+  "analysis_enabled": true,
+  "summary_enabled": true,
+  "audio_recording_enabled": true,
+  "analysis_plan": {
+    "summary": { "enabled": true, "timeoutSeconds": 30 },
+    "structuredData": {
+      "enabled": true,
+      "schema": [
+        { "name": "title", "type": "string", "prompt": "Short incident title." },
+        { "name": "category", "type": "string", "prompt": "One of security, medical, disaster." },
+        { "name": "type", "type": "string", "prompt": "Emergency incident type." },
+        { "name": "severity", "type": "string", "prompt": "One of critical, high, medium, low." },
+        { "name": "summary", "type": "string", "prompt": "Concise factual triage summary." },
+        { "name": "address", "type": "string", "prompt": "Exact address or location wording reported by the caller. Never infer coordinates." },
+        { "name": "landmark", "type": "string", "prompt": "Nearby landmark reported by the caller, if any." },
+        { "name": "city", "type": "string", "prompt": "Reported city or local government area, if any." },
+        { "name": "state", "type": "string", "prompt": "Reported state, if any." },
+        { "name": "country", "type": "string", "prompt": "Reported country; use Nigeria only when stated or configured for this workflow." },
+        { "name": "people_affected", "type": "string", "prompt": "People at risk or affected." },
+        { "name": "hazards", "type": "string", "prompt": "Reported hazards." },
+        { "name": "confidence", "type": "number", "prompt": "Confidence from 0 to 1." },
+        { "name": "escalation_recommendation", "type": "boolean", "prompt": "Whether human escalation review is recommended." }
+      ]
+    }
+  },
+  "compliance_plan": {
+    "enabled": true,
+    "recording_consent": { "enabled": true, "end_call_on_decline": true },
+    "transcript_retention": { "enabled": true },
+    "sensitive_data": { "enabled": true }
+  }
+}

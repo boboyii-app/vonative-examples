@@ -1,0 +1,8 @@
+DEMO_OPERATOR_SECRET=sentinel-demo
+DEMO_OPERATOR_NAME=Demo Operator
+VONATIVE_WEBHOOK_SECRET=sentinel-webhook-development
+SENTINEL_ORGANIZATION_ID=emergency-organization-id
+MAPTILER_GEOCODING_KEY=
+MAPTILER_GEOCODING_COUNTRY=ng
+MAPTILER_GEOCODING_PROXIMITY=
+NEXT_PUBLIC_MAP_STYLE_URL=https://demotiles.maplibre.org/style.json
