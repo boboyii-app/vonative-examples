@@ -13,7 +13,7 @@ const report = {
     },
     artifact: {
       messages: [{ id: "m-1", role: "caller", content: "There is smoke at the market." }],
-      recording_reference: "session:session-7",
+      recording_reference: "https://recordings.example.test/session-7.ogg",
     },
     analysis_status: "completed",
     analysis: {
@@ -55,6 +55,9 @@ describe("final call report normalization", () => {
     }));
     expect(events[2].data.facts).toContainEqual(expect.objectContaining({ label: "location", value: "Ikorodu" }));
     expect(events[2].data.location).toMatchObject({ location: "Ikorodu" });
+    expect(events.find((event) => event.kind === "recording.reference")?.data).toMatchObject({
+      reference: "https://recordings.example.test/session-7.ogg",
+    });
     expect(events[0].callId).toBe("session-7");
   });
 
