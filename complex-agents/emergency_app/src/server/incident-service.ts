@@ -85,14 +85,14 @@ function locationFrom(
   const longitude =
     numberValue(raw.longitude ?? raw.lng ?? raw.lon) ??
     (coordinates && numberValue(coordinates[0]));
-  const reportedAddress = stringValue(raw.reported_address ?? raw.reportedAddress ?? raw.address ?? raw.locationName ?? raw.place) || stringValue(data.location);
+  const reportedAddress = stringValue(raw.reported_address ?? raw.reportedAddress ?? raw.address ?? raw.location ?? raw.locationName ?? raw.place) || stringValue(data.location);
   const geocodingStatus = stringValue(raw.geocoding_status ?? raw.geocodingStatus);
   const geocodingConfidence = numberValue(raw.geocoding_confidence ?? raw.geocodingConfidence ?? raw.confidence);
   const hasCoordinates = latitude !== undefined && longitude !== undefined;
   return {
     latitude: hasCoordinates ? latitude : current.latitude,
     longitude: hasCoordinates ? longitude : current.longitude,
-    address: stringValue(raw.formatted_address ?? raw.formattedAddress ?? raw.address) || current.address,
+    address: stringValue(raw.formatted_address ?? raw.formattedAddress ?? raw.address ?? raw.location) || current.address,
     reportedAddress: reportedAddress || current.reportedAddress,
     geocodingStatus:
       geocodingStatus === "matched" || geocodingStatus === "ambiguous" || geocodingStatus === "unresolved" || geocodingStatus === "not_requested" || geocodingStatus === "verified"

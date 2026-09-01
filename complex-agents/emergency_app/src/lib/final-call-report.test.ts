@@ -27,6 +27,12 @@ const report = {
         escalation_recommendation: true,
       },
     },
+    data_collection: {
+      fields: {
+        incident_type: { value: "fire" },
+        location: { value: { location: "Ikorodu" } },
+      },
+    },
   },
 };
 
@@ -47,6 +53,8 @@ describe("final call report normalization", () => {
       value: "+2348012345678",
       source: "vonative",
     }));
+    expect(events[2].data.facts).toContainEqual(expect.objectContaining({ label: "location", value: "Ikorodu" }));
+    expect(events[2].data.location).toMatchObject({ location: "Ikorodu" });
     expect(events[0].callId).toBe("session-7");
   });
 

@@ -72,6 +72,21 @@ describe("incident event processing", () => {
     expect(result.incident?.transcript[0].revised).toBe(true);
     expect(result.incident?.transcript[1].revisionOf).toBe("segment-1");
   });
+
+  it("uses the template's structured location value for the incident location", async () => {
+    const result = await processNormalizedEvent(
+      env,
+      normalizeScenarioEvent({
+        id: "structured-location",
+        type: "analysis.completed",
+        incidentId: "location-incident",
+        data: { location: { location: "Ikorodu" } },
+      }),
+    );
+
+    expect(result.incident?.location.reportedAddress).toBe("Ikorodu");
+    expect(result.incident?.location.address).toBe("Ikorodu");
+  });
 });
 
 describe("human operator actions", () => {

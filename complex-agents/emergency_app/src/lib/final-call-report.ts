@@ -9,6 +9,22 @@ function record(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};
 }
 
+function displayValue(value: unknown): string | undefined {
+  if (typeof value === "string") return stringValue(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    const values = value.map(displayValue).filter((item): item is string => Boolean(item));
+    return values.length ? values.join(", ") : undefined;
+  }
+  if (isRecord(value)) {
+    const preferred = displayValue(value.formatted_address ?? value.address ?? value.location ?? value.place);
+    if (preferred) return preferred;
+    const values = Object.values(value).map(displayValue).filter((item): item is string => Boolean(item));
+    return values.length ? values.join(", ") : undefined;
+  }
+  return undefined;
+}
+
 /** Converts the webhook-service's finalized end-of-call report into Sentinel events. */
 export function normalizeFinalCallReport(input: unknown, receivedAt = new Date().toISOString()): NormalizedEvent[] {
   if (!isRecord(input)) throw new EventNormalizationError("Final call report must be a JSON object");
@@ -34,15 +50,17 @@ export function normalizeFinalCallReport(input: unknown, receivedAt = new Date()
     call.caller_phone_number ?? call.callerPhoneNumber ?? customer.number,
   );
   const callerFacts = Object.entries(collectionFields).flatMap(([label, field]) => {
-    const item = record(field); const value = item.value;
-    return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
-      ? [{ label: label.replaceAll("_", " "), value: String(value), source: "caller", confidence: 1, verified: false }]
+    const item = record(field); const value = displayValue(item.value);
+    return value
+      ? [{ label: label.replaceAll("_", " "), value, source: "caller", confidence: 1, verified: false }]
       : [];
   });
   const phoneFact = callerPhoneNumber
     ? [{ label: "Caller phone number", value: callerPhoneNumber, source: "vonative", confidence: 1, verified: false }]
     : [];
-  const data = { ...triage, callerPhoneNumber, summary: triage.summary ?? analysis.summary, analysisStatus, analysisError, dataCollection: collection, facts: [...phoneFact, ...callerFacts, ...(Array.isArray(triage.facts) ? triage.facts : [])] };
+  const collectionLocation = record(record(collectionFields.location).value);
+  const location = Object.keys(collectionLocation).length ? collectionLocation : triage.location;
+  const data = { ...triage, location, callerPhoneNumber, summary: triage.summary ?? analysis.summary, analysisStatus, analysisError, dataCollection: collection, facts: [...phoneFact, ...callerFacts, ...(Array.isArray(triage.facts) ? triage.facts : [])] };
   const events: NormalizedEvent[] = [normalizeVonativeEvent({ id: `${eventId}:call`, type: "call.started", ...base, data }, { source: "vonative", receivedAt })];
 
   const messages = Array.isArray(artifact.messages) ? artifact.messages : [];
