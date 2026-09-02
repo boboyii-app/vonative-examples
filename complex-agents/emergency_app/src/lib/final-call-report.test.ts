@@ -30,7 +30,7 @@ const report = {
     data_collection: {
       fields: {
         incident_type: { value: "fire" },
-        location: { value: { location: "Ikorodu" } },
+        address: { value: { address: "12 Market Road, Ikorodu" } },
       },
     },
   },
@@ -53,8 +53,8 @@ describe("final call report normalization", () => {
       value: "+2348012345678",
       source: "vonative",
     }));
-    expect(events[2].data.facts).toContainEqual(expect.objectContaining({ label: "location", value: "Ikorodu" }));
-    expect(events[2].data.location).toMatchObject({ location: "Ikorodu" });
+    expect(events[2].data.facts).toContainEqual(expect.objectContaining({ label: "address", value: "12 Market Road, Ikorodu" }));
+    expect(events[2].data.location).toMatchObject({ address: "12 Market Road, Ikorodu" });
     expect(events.find((event) => event.kind === "recording.reference")?.data).toMatchObject({
       reference: "https://recordings.example.test/session-7.ogg",
     });

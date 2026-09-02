@@ -25,6 +25,12 @@ function displayValue(value: unknown): string | undefined {
   return undefined;
 }
 
+function collectionAddress(collectionFields: Record<string, unknown>): string | undefined {
+  const address = record(collectionFields.address).value;
+  const legacyLocation = record(collectionFields.location).value;
+  return displayValue(address) ?? displayValue(legacyLocation);
+}
+
 /** Converts the webhook-service's finalized end-of-call report into Sentinel events. */
 export function normalizeFinalCallReport(input: unknown, receivedAt = new Date().toISOString()): NormalizedEvent[] {
   if (!isRecord(input)) throw new EventNormalizationError("Final call report must be a JSON object");
@@ -59,8 +65,11 @@ export function normalizeFinalCallReport(input: unknown, receivedAt = new Date()
     ? [{ label: "Caller phone number", value: callerPhoneNumber, source: "vonative", confidence: 1, verified: false }]
     : [];
   const collectionLocation = record(record(collectionFields.location).value);
-  const location = Object.keys(collectionLocation).length ? collectionLocation : triage.location;
-  const data = { ...triage, location, callerPhoneNumber, summary: triage.summary ?? analysis.summary, analysisStatus, analysisError, dataCollection: collection, facts: [...phoneFact, ...callerFacts, ...(Array.isArray(triage.facts) ? triage.facts : [])] };
+  const address = collectionAddress(collectionFields);
+  const location = address
+    ? { ...collectionLocation, address }
+    : Object.keys(collectionLocation).length ? collectionLocation : triage.location;
+  const data = { ...triage, address: triage.address ?? address, location, callerPhoneNumber, summary: triage.summary ?? analysis.summary, analysisStatus, analysisError, dataCollection: collection, facts: [...phoneFact, ...callerFacts, ...(Array.isArray(triage.facts) ? triage.facts : [])] };
   const events: NormalizedEvent[] = [normalizeVonativeEvent({ id: `${eventId}:call`, type: "call.started", ...base, data }, { source: "vonative", receivedAt })];
 
   const messages = Array.isArray(artifact.messages) ? artifact.messages : [];

@@ -5,6 +5,18 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function collectionAddress(message: Record<string, unknown>): string | undefined {
+  const collection = isRecord(message.data_collection ?? message.dataCollection)
+    ? (message.data_collection ?? message.dataCollection) as Record<string, unknown>
+    : {};
+  const fields = isRecord(collection.fields) ? collection.fields : {};
+  const value = isRecord(fields.address) ? fields.address.value : undefined;
+  const legacyValue = isRecord(fields.location) ? fields.location.value : undefined;
+  const address = isRecord(value) ? value.address ?? value.formatted_address : value;
+  const legacyAddress = isRecord(legacyValue) ? legacyValue.address ?? legacyValue.location : legacyValue;
+  return text(address) ?? text(legacyAddress);
+}
+
 function triageFrom(report: Record<string, unknown>): Record<string, unknown> | null {
   const message = isRecord(report.message) ? report.message : null;
   const analysis = message && isRecord(message.analysis) ? message.analysis : null;
@@ -19,7 +31,7 @@ export async function enrichReportLocation(report: unknown, env: SentinelEnv): P
   const message = isRecord(report.message) ? report.message : undefined;
   const triage = triageFrom(report);
   if (!message || !triage) return report;
-  const reportedAddress = text(triage.address);
+  const reportedAddress = text(triage.address) ?? collectionAddress(message);
   const query = [reportedAddress, text(triage.landmark), text(triage.city), text(triage.state), text(triage.country)]
     .filter(Boolean).join(", ");
   const location: Record<string, unknown> = {
@@ -61,7 +73,7 @@ export async function enrichReportLocation(report: unknown, env: SentinelEnv): P
       location.geocoding_error = "Geocoding lookup failed";
     }
   }
-  const nextTriage = { ...triage, location };
+  const nextTriage = { ...triage, address: triage.address ?? reportedAddress, location };
   const analysis = isRecord(message.analysis) ? message.analysis : {};
   return { ...report, message: { ...message, analysis: { ...analysis, emergency_triage: nextTriage } } };
 }
