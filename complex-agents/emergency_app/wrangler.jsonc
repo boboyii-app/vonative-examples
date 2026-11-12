@@ -17,7 +17,7 @@
   ],
   "vars": {
     "DEMO_OPERATOR_NAME": "Demo Operator",
-    "NEXT_PUBLIC_MAP_STYLE_URL": "https://demotiles.maplibre.org/style.json"
+    "NEXT_PUBLIC_MAP_STYLE_URL": "https://tiles.openfreemap.org/styles/liberty"
   },
   "d1_databases": [
     {

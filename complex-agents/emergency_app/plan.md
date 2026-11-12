@@ -8,7 +8,7 @@ Create a new `sentinel-ng` Next.js 16 application in this `emergency_app/` direc
 
 - Build a Vonative-branded, desktop-first operator console with:
   - Demo sign-in backed by a Worker secret; no public incident access.
-  - Overview metrics, live severity-filtered incident feed, MapLibre map centered on Abuja/Nigeria, and activity indicator.
+  - Overview metrics, live severity-filtered incident feed, a country-wide MapLibre map of Nigeria with incident dots, and activity indicator.
   - Incident detail workspace: AI summary, confidence/source labels, structured facts, transcript, timeline, related reports, and map position.
   - Operator actions: acknowledge, assign, escalate, resolve, and mark/review a possible duplicate. Actions always require a human click; no autonomous dispatch or critical-incident merging.
   - A scenario launcher that streams curated emergency situations (including transcript revisions, classification, extraction, and escalation-ready incidents) into the dashboard in real time.
@@ -91,7 +91,7 @@ Create a new `sentinel-ng` Next.js 16 application in this `emergency_app/` direc
 
 - [x] Build the Vonative-branded desktop-first Sentinel NG shell and responsive fallback layout.
 - [x] Add overview metrics, severity-filtered/searchable live incident feed, status/category labels, and live/polling activity indicator.
-- [x] Integrate MapLibre centered on Abuja/Nigeria with environment-configured style URL, severity markers, marker selection, popups, and filter synchronization.
+- [x] Integrate MapLibre fitted to Nigeria with environment-configured style URL, severity dots, marker selection, popups, and filter synchronization.
 - [x] Build the incident detail workspace with AI summary, confidence/source labels, structured facts, transcript revisions, timeline, related-report confidence, and location context.
 - [x] Add explicit acknowledge, assign, escalate, resolve, and duplicate-review actions with audit feedback and no autonomous dispatch/merge behavior.
 - [x] Add the scenario launcher, progress indicator, simulated-data warnings, unverified-claim warnings, and operator sign-out.

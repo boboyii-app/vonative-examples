@@ -5,13 +5,24 @@ import type {
   Severity,
 } from "./types";
 
-export const ABUJA_CENTER = {
-  latitude: 9.0765,
-  longitude: 7.3986,
+// The default camera shows the full country so incidents from every operating
+// area are visible at a glance instead of being limited to Abuja.
+export const NIGERIA_CENTER = {
+  latitude: 9.082,
+  longitude: 8.6753,
 };
 
+// [south-west, north-east] in [longitude, latitude] order, as required by
+// MapLibre's fitBounds API. The bounds cover Nigeria's mainland with a small
+// amount of room for the map padding and neighbouring context.
+export const NIGERIA_BOUNDS: [[number, number], [number, number]] = [
+  [2.65, 4.25],
+  [14.65, 13.9],
+];
+
 // Override this through NEXT_PUBLIC_MAP_STYLE_URL in each environment.
-export const DEFAULT_MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
+// OpenFreeMap provides OSM-backed detail at street-level zooms without an API key.
+export const DEFAULT_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
 export const SEVERITY_LABELS: Record<Severity, string> = {
   critical: "Critical",

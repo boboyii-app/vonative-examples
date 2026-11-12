@@ -1,4 +1,5 @@
 import { isRecord } from "@/lib/normalization";
+import type { Incident, IncidentLocation } from "@/lib/types";
 import type { SentinelEnv } from "./env";
 
 function text(value: unknown): string | undefined {
@@ -25,55 +26,110 @@ function triageFrom(report: Record<string, unknown>): Record<string, unknown> | 
   return isRecord(triage) ? triage : null;
 }
 
-/** Enriches a verified final-call report; provider keys and calls stay in Sentinel. */
+function hasCoordinates(location: IncidentLocation): boolean {
+  return typeof location.latitude === "number" && Number.isFinite(location.latitude) &&
+    typeof location.longitude === "number" && Number.isFinite(location.longitude);
+}
+
+/** Look up a caller-reported address without allowing the model to invent coordinates. */
+async function geocodeQuery(
+  query: string,
+  reportedAddress: string | undefined,
+  env: SentinelEnv,
+): Promise<Partial<IncidentLocation> & { geocodingStatus: IncidentLocation["geocodingStatus"] }> {
+  const location: Partial<IncidentLocation> & { geocodingStatus: IncidentLocation["geocodingStatus"] } = {
+    reportedAddress,
+    geocodingProvider: "maptiler",
+    geocodingStatus: "not_requested",
+  };
+
+  if (!query) {
+    location.geocodingStatus = "unresolved";
+    return location;
+  }
+  if (!env.MAPTILER_GEOCODING_KEY) {
+    location.geocodingStatus = "unresolved";
+    return location;
+  }
+
+  const url = new URL(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json`);
+  url.searchParams.set("key", env.MAPTILER_GEOCODING_KEY);
+  url.searchParams.set("limit", "2");
+  url.searchParams.set("country", env.MAPTILER_GEOCODING_COUNTRY || "ng");
+  if (env.MAPTILER_GEOCODING_PROXIMITY) url.searchParams.set("proximity", env.MAPTILER_GEOCODING_PROXIMITY);
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(4_000) });
+    const payload = await response.json() as { features?: unknown[] };
+    const features = Array.isArray(payload.features) ? payload.features.filter(isRecord) : [];
+    const first = features[0];
+    const geometry = first && isRecord(first.geometry) ? first.geometry : undefined;
+    const coordinates = geometry && Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+    if (!response.ok || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") {
+      location.geocodingStatus = "unresolved";
+    } else {
+      location.address = text(first.place_name) || text(first.text) || reportedAddress || query;
+      location.longitude = coordinates[0];
+      location.latitude = coordinates[1];
+      location.geocodingFeatureId = text(first.id);
+      location.geocodingStatus = features.length > 1 ? "ambiguous" : "matched";
+      location.geocodingConfidence = features.length > 1 ? 0.6 : 0.8;
+    }
+  } catch {
+    location.geocodingStatus = "unresolved";
+  }
+
+  return location;
+}
+
+/**
+ * Enriches a verified final-call report; provider keys and calls stay in Sentinel.
+ * The analysis only supplies the reported address and context. MapTiler supplies
+ * the coordinates used by the map.
+ */
 export async function enrichReportLocation(report: unknown, env: SentinelEnv): Promise<unknown> {
   if (!isRecord(report)) return report;
   const message = isRecord(report.message) ? report.message : undefined;
-  const triage = triageFrom(report);
-  if (!message || !triage) return report;
+  // A final-call report can arrive before post-call analysis completes. The
+  // caller-collected address is still safe to geocode, so do not wait for an
+  // optional emergency_triage object before enriching its location.
+  const triage = triageFrom(report) || {};
+  if (!message) return report;
+
   const reportedAddress = text(triage.address) ?? collectionAddress(message);
-  const query = [reportedAddress, text(triage.landmark), text(triage.city), text(triage.state), text(triage.country)]
-    .filter(Boolean).join(", ");
-  const location: Record<string, unknown> = {
-    reported_address: reportedAddress,
-    geocoding_provider: "maptiler",
-    geocoding_status: "not_requested",
+  const query = [
+    reportedAddress,
+    text(triage.landmark),
+    text(triage.city),
+    text(triage.state),
+    text(triage.country) ?? "Nigeria",
+  ].filter(Boolean).join(", ");
+  const location = await geocodeQuery(query, reportedAddress, env);
+  const nextTriage = {
+    ...triage,
+    address: triage.address ?? reportedAddress,
+    location,
   };
-  if (!query) {
-    location.geocoding_status = "unresolved";
-    location.geocoding_error = "No usable address or landmark was extracted";
-  } else if (!env.MAPTILER_GEOCODING_KEY) {
-    location.geocoding_error = "Geocoding is not configured";
-  } else {
-    const url = new URL(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json`);
-    url.searchParams.set("key", env.MAPTILER_GEOCODING_KEY);
-    url.searchParams.set("limit", "2");
-    if (env.MAPTILER_GEOCODING_COUNTRY) url.searchParams.set("country", env.MAPTILER_GEOCODING_COUNTRY);
-    if (env.MAPTILER_GEOCODING_PROXIMITY) url.searchParams.set("proximity", env.MAPTILER_GEOCODING_PROXIMITY);
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(4_000) });
-      const payload = await response.json() as { features?: unknown[] };
-      const features = Array.isArray(payload.features) ? payload.features.filter(isRecord) : [];
-      const first = features[0];
-      const geometry = first && isRecord(first.geometry) ? first.geometry : undefined;
-      const coordinates = geometry && Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-      if (!response.ok || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") {
-        location.geocoding_status = "unresolved";
-        location.geocoding_error = "No matching point location was found";
-      } else {
-        location.address = text(first.place_name) || text(first.text) || reportedAddress || query;
-        location.longitude = coordinates[0];
-        location.latitude = coordinates[1];
-        location.geocoding_feature_id = text(first.id);
-        location.geocoding_status = features.length > 1 ? "ambiguous" : "matched";
-        location.geocoding_confidence = features.length > 1 ? 0.6 : 0.8;
-      }
-    } catch {
-      location.geocoding_status = "unresolved";
-      location.geocoding_error = "Geocoding lookup failed";
-    }
-  }
-  const nextTriage = { ...triage, address: triage.address ?? reportedAddress, location };
   const analysis = isRecord(message.analysis) ? message.analysis : {};
   return { ...report, message: { ...message, analysis: { ...analysis, emergency_triage: nextTriage } } };
+}
+
+/** Retry location enrichment for older incidents that arrived before geocoding was configured. */
+export async function geocodeIncidentLocation(incident: Incident, env: SentinelEnv): Promise<Incident> {
+  const current = incident.location;
+  if (hasCoordinates(current) || current.geocodingStatus !== "not_requested") return incident;
+
+  const reportedAddress = current.reportedAddress ||
+    (current.address !== "Location requires verification" ? current.address : undefined);
+  if (!reportedAddress) return incident;
+
+  const location = await geocodeQuery(`${reportedAddress}, Nigeria`, reportedAddress, env);
+  return {
+    ...incident,
+    location: {
+      ...current,
+      ...location,
+      address: location.address || current.address,
+    },
+  };
 }

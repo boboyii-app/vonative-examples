@@ -41,7 +41,7 @@ Without Cloudflare bindings, the app uses an empty process-local store and polli
    npx wrangler secret put VONATIVE_WEBHOOK_SECRET
    ```
 
-5. Set `NEXT_PUBLIC_MAP_STYLE_URL` to an approved public MapLibre-compatible style URL if the default demo tiles are not appropriate.
+5. The default map style is OpenFreeMap Liberty (`https://tiles.openfreemap.org/styles/liberty`), which provides OpenStreetMap-backed street detail without an API key. Set `NEXT_PUBLIC_MAP_STYLE_URL` to another approved public MapLibre-compatible style URL if needed.
 6. Build and preview/deploy:
 
    ```bash
